@@ -7,24 +7,22 @@ const submitRequest = async (req, res) => {
   try {
     const { title, description } = req.body;
 
+    if (!title?.trim() || !description?.trim()) {
+      return res.status(400).json({ message: "Title and description are required" });
+    }
+
     const request = await Request.create({
-      title,
-      description,
-      submittedBy: req.user._id
+      title: title.trim(),
+      description: description.trim(),
+      submittedBy: req.user._id,
     });
 
-    // Audit log
-    await logAudit(
-      req.user._id,
-      "Submitted Request",
-      title
-    );
+    await logAudit(req.user._id, "Submitted Request", request.title);
 
     res.status(201).json({
       message: "Request submitted successfully",
-      request
+      request,
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -33,12 +31,8 @@ const submitRequest = async (req, res) => {
 // GET USER REQUESTS
 const getUserRequests = async (req, res) => {
   try {
-    const requests = await Request.find({
-      submittedBy: req.user._id
-    });
-
+    const requests = await Request.find({ submittedBy: req.user._id }).sort({ createdAt: -1 });
     res.json(requests);
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -49,20 +43,22 @@ const getAllRequests = async (req, res) => {
   try {
     const requests = await Request.find()
       .populate("submittedBy", "name email role")
-      .populate("reviewedBy", "name email role");
+      .populate("reviewedBy", "name email role")
+      .sort({ createdAt: -1 });
 
     res.json(requests);
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-
 // APPROVE / REJECT REQUEST
 const reviewRequest = async (req, res) => {
   try {
     const { status } = req.body;
+    if (!["Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
 
     const request = await Request.findById(req.params.id);
 
@@ -76,28 +72,17 @@ const reviewRequest = async (req, res) => {
 
     const updatedRequest = await request.save();
 
-    // Audit log
-    await logAudit(
-      req.user._id,
-      `${status} Request`,
-      request.title
-    );
+    await logAudit(req.user._id, `${status} Request`, request.title);
+
+    await sendNotification(request.submittedBy, `Your request "${request.title}" has been ${status}`);
 
     res.json({
       message: `Request ${status}`,
-      updatedRequest
+      updatedRequest,
     });
-
-    await sendNotification(
-  request.submittedBy,
-  `Your request "${request.title}" has been ${status}`
-);
-
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-
-module.exports = { submitRequest, getUserRequests , getAllRequests, reviewRequest};
+module.exports = { submitRequest, getUserRequests, getAllRequests, reviewRequest };

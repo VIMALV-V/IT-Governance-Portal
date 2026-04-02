@@ -5,11 +5,9 @@ const PolicyAcknowledgement = require("../models/PolicyAcknowledgement");
 
 const getDashboardStats = async (req, res) => {
   try {
-
     const totalPolicies = await Policy.countDocuments();
-
     const totalRequests = await Request.countDocuments();
-    const pendingRequests = await Request.countDocuments({ status: "Pending" });
+    const pendingRequests = await Request.countDocuments({ status: /^Pending/i });
     const approvedRequests = await Request.countDocuments({ status: "Approved" });
     const rejectedRequests = await Request.countDocuments({ status: "Rejected" });
 
@@ -17,9 +15,7 @@ const getDashboardStats = async (req, res) => {
     const totalAcknowledgements = await PolicyAcknowledgement.countDocuments();
 
     const compliancePercentage =
-      totalEmployees === 0
-        ? 0
-        : ((totalAcknowledgements / totalEmployees) * 100).toFixed(2);
+      totalEmployees === 0 ? 0 : Number(((totalAcknowledgements / totalEmployees) * 100).toFixed(2));
 
     res.json({
       totalPolicies,
@@ -29,9 +25,8 @@ const getDashboardStats = async (req, res) => {
       rejectedRequests,
       totalEmployees,
       totalAcknowledgements,
-      compliancePercentage: compliancePercentage + "%"
+      compliancePercentage,
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

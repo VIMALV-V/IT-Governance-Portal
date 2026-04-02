@@ -4,31 +4,39 @@ const requestSchema = new mongoose.Schema(
   {
     title: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
     },
     description: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
     },
     submittedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
+      ref: "User",
     },
     status: {
       type: String,
       enum: ["Pending", "Approved", "Rejected"],
-      default: "Pending"
+      default: "Pending",
     },
+    attachments: [
+      {
+        filename: String,
+        url: String,
+      },
+    ],
     reviewedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
+      ref: "User",
     },
     reviewedAt: {
-      type: Date
-    }
+      type: Date,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 

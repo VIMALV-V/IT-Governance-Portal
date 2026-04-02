@@ -20,9 +20,23 @@ const policySchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Active", "Inactive"],
-      default: "Active"
-    }
+      enum: ["Draft", "Active", "Archived"],
+      default: "Draft"
+    },
+    versionHistory: [
+      {
+        version: String,
+        updatedAt: { type: Date, default: Date.now },
+        updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        changes: String
+      }
+    ],
+    attachments: [
+      {
+        filename: String,
+        url: String
+      }
+    ]
   },
   {
     timestamps: true

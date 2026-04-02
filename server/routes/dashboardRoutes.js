@@ -8,8 +8,9 @@ const router = express.Router();
 router.get(
   "/stats",
   protect,
-  authorizeRoles("Admin", "Manager"),
+  authorizeRoles("Admin", "Manager", "Auditor"),
   getDashboardStats
 );
 
 module.exports = router;
+

@@ -1,97 +1,85 @@
-import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import {
-  FiHome,
-  FiFileText,
-  FiClipboard,
-  FiBell,
-  FiAlertTriangle,
-  FiLogOut,
-} from "react-icons/fi";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import Sidebar from "./SideBar";
+import Navbar from "./Navbar";
+import { useTheme } from "../hooks/useTheme";
 
 function Layout({ children }) {
-  const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
   const location = useLocation();
-  const role = localStorage.getItem("role");
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    navigate("/");
-  };
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+    const onChange = (event) => setIsMobile(event.matches);
 
-  const navItem = (path) =>
-    `flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${
-      location.pathname === path
-        ? "bg-gray-800 border-l-4 border-blue-500 text-white"
-        : "text-gray-300 hover:bg-gray-800 hover:text-white"
-    }`;
+    setIsMobile(mediaQuery.matches);
+    mediaQuery.addEventListener("change", onChange);
+    return () => mediaQuery.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileOpen(false);
+    }
+  }, [isMobile]);
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-900 text-white p-6 shadow-xl">
-        <h2 className="text-2xl font-bold mb-2 tracking-wide">
-          IT Governance
-        </h2>
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        background: "var(--bg-primary)",
+      }}
+    >
+      <Sidebar
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+        isMobile={isMobile}
+      />
 
-        <p className="text-sm text-gray-400 mb-6">
-          Logged in as: {role}
-        </p>
+      {isMobile && mobileOpen && (
+        <button aria-label="Close sidebar" className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />
+      )}
 
-        <div className="flex flex-col gap-2">
-          <button
-            className={navItem("/dashboard")}
-            onClick={() => navigate("/dashboard")}
-          >
-            <FiHome /> Dashboard
-          </button>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <Navbar
+          theme={theme}
+          toggleTheme={toggleTheme}
+          onToggleSidebar={() => setMobileOpen((prev) => !prev)}
+          showMenuButton={isMobile}
+        />
 
-          <button
-            className={navItem("/policies")}
-            onClick={() => navigate("/policies")}
-          >
-            <FiFileText /> Policies
-          </button>
-
-          <button
-            className={navItem("/requests")}
-            onClick={() => navigate("/requests")}
-          >
-            <FiClipboard /> Requests
-          </button>
-
-          <button
-            className={navItem("/notifications")}
-            onClick={() => navigate("/notifications")}
-          >
-            <FiBell /> Notifications
-          </button>
-
-          <button
-            className={navItem("/risks")}
-            onClick={() => navigate("/risks")}
-          >
-            <FiAlertTriangle /> Risks
-          </button>
-
-          <hr className="my-6 border-gray-700" />
-
-          <button
-            className="flex items-center gap-2 bg-red-600 px-4 py-2 rounded-lg hover:bg-red-700 transition"
-            onClick={logout}
-          >
-            <FiLogOut /> Logout
-          </button>
-        </div>
+        <main
+          className="app-main"
+          style={{
+            flex: 1,
+            padding: "24px",
+            overflowY: "auto",
+            animation: "fadeIn 0.2s ease",
+          }}
+        >
+          {children}
+        </main>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-10">
-        {children}
-      </div>
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
 
 export default Layout;
+

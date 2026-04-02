@@ -1,15 +1,10 @@
 const express = require("express");
 const { getAuditLogs } = require("../controllers/auditController");
-const { protect, authorizeRoles } = require("../middleware/authMiddleware");
+const { protect, authorizePermissions } = require("../middleware/authMiddleware");
+const { PERMISSIONS } = require("../constants/permissions");
 
 const router = express.Router();
 
-// Only Admin & Auditor can view logs
-router.get(
-  "/",
-  protect,
-  authorizeRoles("Admin", "Auditor"),
-  getAuditLogs
-);
+router.get("/", protect, authorizePermissions(PERMISSIONS.VIEW_AUDIT_LOGS), getAuditLogs);
 
 module.exports = router;

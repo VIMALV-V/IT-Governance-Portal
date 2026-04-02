@@ -1,27 +1,29 @@
 const Risk = require("../models/Risk");
 const logAudit = require("../utils/auditLogger");
-const sendNotification = require("../utils/notificationService");
 
 // CREATE RISK
 const createRisk = async (req, res) => {
   try {
     const { title, description, severity, mitigation } = req.body;
 
+    if (!title?.trim() || !description?.trim()) {
+      return res.status(400).json({ message: "Title and description are required" });
+    }
+
     const risk = await Risk.create({
-      title,
-      description,
-      severity,
-      mitigation,
-      createdBy: req.user._id
+      title: title.trim(),
+      description: description.trim(),
+      severity: severity || "Low",
+      mitigation: mitigation?.trim() || "",
+      createdBy: req.user._id,
     });
 
-    await logAudit(req.user._id, "Created Risk", title);
+    await logAudit(req.user._id, "Created Risk", risk.title);
 
     res.status(201).json({
       message: "Risk created successfully",
-      risk
+      risk,
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -30,7 +32,7 @@ const createRisk = async (req, res) => {
 // GET ALL RISKS
 const getRisks = async (req, res) => {
   try {
-    const risks = await Risk.find().populate("createdBy", "name email");
+    const risks = await Risk.find().populate("createdBy", "name email").sort({ createdAt: -1 });
     res.json(risks);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -41,6 +43,9 @@ const getRisks = async (req, res) => {
 const updateRiskStatus = async (req, res) => {
   try {
     const { status } = req.body;
+    if (!["Open", "In Progress", "Resolved"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
 
     const risk = await Risk.findById(req.params.id);
 
@@ -55,9 +60,8 @@ const updateRiskStatus = async (req, res) => {
 
     res.json({
       message: "Risk status updated",
-      updatedRisk
+      updatedRisk,
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -66,5 +70,5 @@ const updateRiskStatus = async (req, res) => {
 module.exports = {
   createRisk,
   getRisks,
-  updateRiskStatus
+  updateRiskStatus,
 };

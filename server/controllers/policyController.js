@@ -2,6 +2,13 @@ const Policy = require("../models/Policy");
 const User = require("../models/User");
 const sendNotification = require("../utils/notificationService");
 
+const queueNotifications = (employees, title) => {
+  setImmediate(async () => {
+    const tasks = employees.map((emp) => sendNotification(emp._id, `New policy created: ${title}`));
+    await Promise.allSettled(tasks);
+  });
+};
+
 // CREATE POLICY
 const createPolicy = async (req, res) => {
   try {
@@ -18,10 +25,8 @@ const createPolicy = async (req, res) => {
       createdBy: req.user._id,
     });
 
-    const employees = await User.find({ role: "Employee" }).select("_id");
-    await Promise.all(
-      employees.map((emp) => sendNotification(emp._id, `New policy created: ${policy.title}`))
-    );
+    const employees = await User.find({ role: "Employee", isActive: true }).select("_id").lean();
+    queueNotifications(employees, policy.title);
 
     res.status(201).json({
       message: "Policy created successfully",

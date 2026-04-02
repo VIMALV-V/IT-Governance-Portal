@@ -31,6 +31,16 @@ const getDefaultRole = async () => {
   return employeeRole;
 };
 
+const queueAudit = (payload) => {
+  setImmediate(async () => {
+    try {
+      await logAudit(payload);
+    } catch (error) {
+      console.error("Deferred audit logging failed:", error.message);
+    }
+  });
+};
+
 const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -62,7 +72,7 @@ const registerUser = async (req, res) => {
       roles: [employeeRole._id],
     });
 
-    await logAudit({
+    queueAudit({
       req,
       user: user._id,
       username: user.name,
@@ -107,7 +117,7 @@ const loginUser = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      await logAudit({
+      queueAudit({
         req,
         user: user._id,
         username: user.name,
@@ -133,7 +143,7 @@ const loginUser = async (req, res) => {
       expiresIn: "1d",
     });
 
-    await logAudit({
+    queueAudit({
       req,
       user: user._id,
       username: user.name,
@@ -161,7 +171,7 @@ const loginUser = async (req, res) => {
 };
 
 const logoutUser = async (req, res) => {
-  await logAudit({
+  queueAudit({
     req,
     user: req.user._id,
     username: req.user.name,
@@ -194,7 +204,7 @@ const updateProfile = async (req, res) => {
 
     const updatedUser = await user.save();
 
-    await logAudit({
+    queueAudit({
       req,
       user: req.user._id,
       username: req.user.name,
@@ -248,7 +258,7 @@ const updatePassword = async (req, res) => {
     user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
 
-    await logAudit({
+    queueAudit({
       req,
       user: req.user._id,
       username: req.user.name,
